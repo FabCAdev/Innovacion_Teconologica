@@ -1,53 +1,47 @@
-name: CI — Node.js
-# ── TRIGGER ──────────────────────────────────────────────────────
-# Define cuándo se ejecuta este workflow automáticamente.
-# Se dispara en dos situaciones:
+name: "CI — ODS12 Plataforma Reciclaje (Node.js)"
+
 on:
- push:
- branches: [ "main", "develop" ] # Cuando alguien hace push a estas ramas
- pull_request:
- branches: [ "main" ] # Cuando se abre un PR hacia main
-# ── JOBS ─────────────────────────────────────────────────────────
-# Un job es un conjunto de pasos que se ejecutan en la misma máquina virtual.
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+
 jobs:
- build-and-test:
- runs-on: ubuntu-latest # Usa una VM con Ubuntu Linux (gratuito)
- # Matrix: ejecuta el mismo job dos veces, una con Node 18 y otra con Node 20
- strategy:
- matrix:
- node-version: [18, 20]
- steps:
- # PASO 1: Descarga el código de tu repositorio dentro de la VM
- - name: Checkout del código
- uses: actions/checkout@v4
- # PASO 2: Instala la versión de Node.js indicada en la matrix
- - name: Setup Node.js ${{ matrix.node-version }}
- uses: actions/setup-node@v4
- with:
- node-version: ${{ matrix.node-version }}
- cache: "npm" # Guarda node_modules en caché para builds más rápidos
- # PASO 3: Instala las dependencias del proyecto
- # "npm ci" es más estricto que "npm install": requiere package-lock.json
- # y falla si hay discrepancias. Ideal para entornos de CI.
- - name: Instalar dependencias
- run: npm ci
- # PASO 4: Análisis estático de código (linting)
- # Si tu proyecto NO tiene ESLint configurado, borra este paso completo.
- # Para verificar: revisa si existe script "lint" en tu package.json
- - name: Linting
- run: npm run lint
- # PASO 5: Ejecuta las pruebas unitarias
- # El script "test" debe existir en tu package.json
- - name: Pruebas unitarias
- run: npm test
- # PASO 6: Genera el build de producción
- - name: Build de producción
- run: npm run build
- # PASO 7: Guarda el resultado del build como artefacto
- # Útil para descargarlo y revisarlo después si hay un problema.
- - name: Subir artefacto del build
- uses: actions/upload-artifact@v4
- with:
- name: build-output
- path: dist/ # Cámbialo a "build/" si usas Create React App
- retention-days: 
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificación de tipos TypeScript
+        run: npm run type-check
+
+      - name: Linting
+        run: npm run lint
+
+      - name: Pruebas unitarias
+        run: npm test
+
+      - name: Build de producción
+        run: npm run build
+
+      - name: Subir artefacto del build
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-build-node${{ matrix.node-version }}
+          path: .next/
+          retention-days: 7
