@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Variables de color ODS 12 — contraste WCAG 2.1 AA garantizado */
+:root {
+  --color-primario: #1a6b3a;
+  --color-primario-claro: #27ae60;
+  --color-fondo: #ffffff;
+  --color-texto: #111827;
+  /* Fuente mínima 16px — copilot-instructions */
+  font-size: 16px;
+}
+
+/* Base accesible — WCAG 2.1 AA */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 1rem; /* 16px */
+  line-height: 1.5;
+  color: var(--color-texto);
+  background-color: var(--color-fondo);
+}
+
+/* Focus visible para navegación con teclado */
+*:focus-visible {
+  outline: 3px solid var(--color-primario-claro);
+  outline-offset: 2px;
+}
