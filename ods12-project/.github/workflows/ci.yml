@@ -1,62 +1,47 @@
-name: CI — ODS12 Plataforma Reciclaje (Node.js)
+name: "CI — ODS12 Plataforma Reciclaje (Node.js)"
 
-# ── TRIGGER ──────────────────────────────────────────────────────
-# Se dispara en dos situaciones:
 on:
   push:
-    branches: [ "main", "develop" ]   # Al hacer push a estas ramas
+    branches: [ "main", "develop" ]
   pull_request:
-    branches: [ "main" ]              # Al abrir PR hacia main
+    branches: [ "main" ]
 
-# ── JOBS ─────────────────────────────────────────────────────────
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    # Matrix strategy: prueba en Node 18 y Node 20 simultáneamente
     strategy:
       matrix:
         node-version: [18, 20]
 
     steps:
-      # PASO 1: Descarga el código del repositorio
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      # PASO 2: Instala Node.js con caché de npm
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
 
-      # PASO 3: Instala dependencias (más estricto que npm install)
       - name: Instalar dependencias
         run: npm ci
 
-      # PASO 4: Verificación de tipos TypeScript
-      # Garantiza tipado end-to-end — regla copilot-instructions
       - name: Verificación de tipos TypeScript
         run: npm run type-check
 
-      # PASO 5: Linting con ESLint
       - name: Linting
         run: npm run lint
 
-      # PASO 6: Pruebas unitarias con cobertura
-      # Cobertura mínima DEV: 60% — definida en Act01_P3
       - name: Pruebas unitarias
         run: npm test
 
-      # PASO 7: Build de producción (Next.js)
-      # Verifica que el build compila sin errores
       - name: Build de producción
         run: npm run build
 
-      # PASO 8: Guarda el build como artefacto descargable
       - name: Subir artefacto del build
         uses: actions/upload-artifact@v4
         with:
-          name: nextjs-build-node${{ matrix.node-version }}
+          name: nextjs-build-node${{ matrix.node-version }}s
           path: .next/
           retention-days: 7
