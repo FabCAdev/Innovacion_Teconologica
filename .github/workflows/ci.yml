@@ -1,4 +1,4 @@
-name: "CI — ODS12 Plataforma Reciclaje (Node.js)"
+name: "CI — ODS11 Plataforma Reciclaje (Node.js)"
 
 on:
   push:
@@ -9,6 +9,13 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
+    # ESTO ES LO QUE ARREGLA EL ERROR:
+    # Le dice a GitHub Actions que todos los comandos y búsquedas de archivos 
+    # se ejecuten dentro de la carpeta 'ods12-project'
+    defaults:
+      run:
+        working-directory: ods12-project
 
     strategy:
       matrix:
@@ -23,6 +30,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
+          # Le indica a la caché dónde buscar específicamente el package-lock.json
+          cache-dependency-path: ods12-project/package-lock.json
 
       - name: Instalar dependencias
         run: npm ci
@@ -43,5 +52,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-build-node${{ matrix.node-version }}
-          path: .next/
+          # Ajustamos la ruta para que guarde la carpeta compilada desde la subcarpeta
+          path: ods12-project/.next/
           retention-days: 7
