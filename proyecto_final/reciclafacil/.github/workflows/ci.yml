@@ -1,0 +1,73 @@
+name: CI — ODS12 Plataforma Reciclaje (Node.js)
+
+# TRIGGER: el pipeline se dispara en push a main/develop
+# y en pull_request hacia main. Esto conecta directamente
+# con las reglas de entorno (DEV / QA / PROD) definidas
+# en la sección 3.3 del documento técnico.
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    # MATRIX STRATEGY: corre el pipeline en dos versiones
+    # de Node.js para garantizar compatibilidad del stack.
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Paso agregado por el equipo: T3 Stack usa TypeScript
+      # estricto, por lo que se valida el tipado antes del build.
+      - name: Verificación de tipos TypeScript
+        run: npm run type-check
+
+      - name: Linting
+        run: npm run lint
+
+      # Ejecuta las pruebas del módulo crítico de búsqueda,
+      # incluyendo los criterios de aceptación CA-01 a CA-04.
+      - name: Pruebas unitarias
+        run: npm test
+
+      - name: Build de producción
+        run: npm run build
+
+      - name: Subir artefacto del build
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-build-node${{ matrix.node-version }}
+          path: .next/
+          retention-days: 7
+
+  # JOB DE DESPLIEGUE: solo corre si build-and-test pasó
+  # y el push llegó a la rama main (entorno PROD).
+  deploy-vercel:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy a Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: "--prod"

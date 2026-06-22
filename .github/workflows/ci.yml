@@ -1,0 +1,53 @@
+name: "CI — ODS12 Plataforma Reciclaje (Node.js)"
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    # Indica a GitHub que todos los comandos 'run' se ejecuten en la subcarpeta
+    defaults:
+      run:
+        working-directory: ods12-project
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          # Desactivamos temporalmente la caché nativa para evitar bloqueos en el caché global de npm
+
+      - name: Instalar dependencias
+        # Usamos --legacy-peer-deps por si hay conflictos menores de versiones de TypeScript/Next.js
+        run: npm install --legacy-peer-deps
+
+      - name: Verificación de tipos TypeScript
+        run: npm run type-check
+
+      - name: Linting
+        run: npx next lint
+
+      - name: Pruebas unitarias
+        run: npm test
+
+      - name: Build de producción
+        run: npm run build
+
+      - name: Subir artefacto del build
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-build-node${{ matrix.node-version }}
+          path: ods12-project/.next/
+          retention-days: 7
